@@ -1,0 +1,4 @@
+flatlatex
+configobj
+PyQt5
+xdg
