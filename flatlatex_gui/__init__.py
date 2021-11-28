@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""
+r"""
 GUI to LaTeX math to Unicode text converter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -27,12 +27,11 @@ using unicode characters.
 
 For example, this :
 
-\\forall \\eta>0\\, \\exists n\\in\\mathbb{N}\\, \\forall i>n\\, |u_i-\\mathcal{l}|<\\eta
+    \forall \varepsilon>0,\,\exists x\in\mathbb R,\, x^{12}=\varepsilon
 
 gives:
 
-∀η>0 ∃n∈ℕ ∀i>n |uᵢ-𝓵|<η
-
+    ∀ε>0, ∃x∈ℝ, x¹²=ε
 """
 
 __title__ = "flatlatex-gui"
