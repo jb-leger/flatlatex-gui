@@ -27,6 +27,8 @@ import configobj
 
 import flatlatex
 
+from PyQt5.QtCore import QSize
+
 from PyQt5.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -233,14 +235,15 @@ class WidMain(QDialog):
         QApplication.quit()
 
     def _set_initial_size(self):
-        self.setMinimumWidth(600)
-        pass
+        width = 600
+        self.setMinimumWidth(width)
+        self.setFixedSize(QSize(width, self.mainLayout.sizeHint().height()))
+        self.resize(0,0)
 
     def _show_config_toogle(self):
         config = self._showconfig.isChecked()
         self._config.setVisible(config)
-        if not config:
-            self._set_initial_size()
+        self._set_initial_size()
 
 
 def main():
