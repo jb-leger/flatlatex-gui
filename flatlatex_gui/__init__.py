@@ -27,11 +27,11 @@ using unicode characters.
 
 For example, this :
 
-\\forall \\eta>0\\, \\exists n\\in\\mathbb{N}\\, \\forall i>n\\, |u_i-\\mathcal{l}|<\\eta
+    \\forall \\eta>0\\, \\exists n\\in\\mathbb{N}\\, \\forall i>n\\, u_i-\\mathcal{l}<\\eta
 
 gives:
 
-∀η>0 ∃n∈ℕ ∀i>n |uᵢ-𝓵|<η
+    ∀η>0 ∃n∈ℕ ∀i>n uᵢ-𝓵<η
 
 """
 
