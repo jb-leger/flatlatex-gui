@@ -59,13 +59,17 @@ class ConfigAndConverter:
             self._allow_combinings = self._configobj["allow_combinings"] == "True"
         else:
             self._allow_combinings = True
+        if "keep_spaces" in self._configobj:
+            self._keep_spaces = self._configobj["keep_spaces"] == "True"
+        else:
+            self._keep_spaces = True
         if "newcommands" in self._configobj:
             self._newcommands = tuple(self._configobj["newcommands"])
         else:
             self._newcommands = (r"% Insert \newcommand lines here.",)
 
         if "display_escaped" in self._configobj:
-            self._display_escaped = (self._configobj['display_escaped'] == 'True')
+            self._display_escaped = self._configobj["display_escaped"] == "True"
         else:
             self._display_escaped = False
 
@@ -80,6 +84,10 @@ class ConfigAndConverter:
         return self._allow_combinings
 
     @property
+    def keep_spaces(self):
+        return self._keep_spaces
+
+    @property
     def newcommands(self):
         return self._newcommands
 
@@ -89,7 +97,9 @@ class ConfigAndConverter:
 
     def _create_converter(self):
         newconverter = flatlatex.converter(
-            allow_zw=self._allow_zw, allow_combinings=self._allow_combinings
+            allow_zw=self._allow_zw,
+            allow_combinings=self._allow_combinings,
+            keep_spaces=self._keep_spaces,
         )
         for nc in self._newcommands:
             if not re.match(r"\s*%", nc):
@@ -108,18 +118,21 @@ class ConfigAndConverter:
         self._configobj.write()
         return True
 
-    def update_params(self, allow_zw, allow_combinings):
+    def update_params(self, allow_zw, allow_combinings, keep_spaces):
         self._configobj["allow_zw"] = allow_zw
         self._configobj["allow_combinings"] = allow_combinings
+        self._configobj["keep_spaces"] = keep_spaces
         self._configobj.write()
         self._allow_zw = allow_zw
         self._allow_combinings = allow_combinings
+        self._keep_spaces = keep_spaces
         self.converter.allow_zw = allow_zw
         self.converter.allow_combinings = allow_combinings
+        self.converter.keep_spaces = keep_spaces
 
     def update_display_escaped(self, display_escaped):
         self._display_escaped = display_escaped
-        self._configobj['display_escaped'] = display_escaped
+        self._configobj["display_escaped"] = display_escaped
         self._configobj.write()
 
 
@@ -134,6 +147,7 @@ class WidConfig(QWidget):
         self._displayescaped = QCheckBox("Display escaped unicode")
         self._allowcombinings = QCheckBox("Allow combining chars")
         self._allowzw = QCheckBox("Allow zero width chars")
+        self._keepspaces = QCheckBox("Keep spaces")
         self._newcommands = QTextEdit()
         self._newcommands.setMaximumHeight(105)
         self._btn_update = QPushButton("Update newcommands")
@@ -148,6 +162,7 @@ class WidConfig(QWidget):
         self._displayescaped.setChecked(self._cc.display_escaped)
         self._allowzw.setChecked(self._cc.allow_zw)
         self._allowcombinings.setChecked(self._cc.allow_combinings)
+        self._keepspaces.setChecked(self._cc.keep_spaces)
         self._newcommands.setText("\n".join(self._cc.newcommands))
         self._widbtn.setVisible(False)
         self._label_errornewcommand.setVisible(False)
@@ -156,6 +171,7 @@ class WidConfig(QWidget):
         layout.addWidget(self._displayescaped)
         layout.addWidget(self._allowcombinings)
         layout.addWidget(self._allowzw)
+        layout.addWidget(self._keepspaces)
         layout.addWidget(self._newcommands)
         layout.addWidget(self._widbtn)
         layout.addWidget(self._label_errornewcommand)
@@ -163,6 +179,7 @@ class WidConfig(QWidget):
         self._displayescaped.stateChanged.connect(self._displayescaped_update)
         self._allowcombinings.stateChanged.connect(self._params_update)
         self._allowzw.stateChanged.connect(self._params_update)
+        self._keepspaces.stateChanged.connect(self._params_update)
         self._newcommands.textChanged.connect(self._newcommands_changed)
         self._btn_update.clicked.connect(self._newcommands_update)
         self._btn_cancel.clicked.connect(self._newcommands_cancel)
@@ -175,7 +192,8 @@ class WidConfig(QWidget):
     def _params_update(self):
         allow_zw = self._allowzw.isChecked()
         allow_combinings = self._allowcombinings.isChecked()
-        self._cc.update_params(allow_zw, allow_combinings)
+        keep_spaces = self._keepspaces.isChecked()
+        self._cc.update_params(allow_zw, allow_combinings, keep_spaces)
         self._reconvert()
 
     def _newcommands_changed(self):
@@ -200,12 +218,14 @@ class WidMain(QDialog):
         super().__init__(parent)
 
         self._cc = ConfigAndConverter()
-        
+
         self.mainLayout = QVBoxLayout(self)
         self.mainLayout.setContentsMargins(5, 5, 5, 5)
 
         self._showconfig = QCheckBox("Show configuration")
-        self._config = WidConfig(self._cc, self._reconvert, self._displayescaped_display)
+        self._config = WidConfig(
+            self._cc, self._reconvert, self._displayescaped_display
+        )
         self._showconfig.setChecked(False)
         self._config.setVisible(False)
         self._showconfig.stateChanged.connect(self._show_config_toogle)
@@ -257,11 +277,13 @@ class WidMain(QDialog):
             output = self._cc.converter.convert(latex)
         except flatlatex.conv.LatexSyntaxError:
             self._unicodeline.setStyleSheet("background-color: rgb(255, 208, 208);")
-            self._unicodeescapeline.setStyleSheet("background-color: rgb(255, 208, 208);")
+            self._unicodeescapeline.setStyleSheet(
+                "background-color: rgb(255, 208, 208);"
+            )
             return
         self._lastunicode = output
         self._unicodeline.setText(output)
-        self._unicodeescapeline.setText(output.encode('unicode_escape').decode())
+        self._unicodeescapeline.setText(output.encode("unicode_escape").decode())
         self._unicodeline.setStyleSheet("")
         self._unicodeescapeline.setStyleSheet("")
 
@@ -277,7 +299,7 @@ class WidMain(QDialog):
         width = 600
         self.setMinimumWidth(width)
         self.setFixedSize(QSize(width, self.mainLayout.sizeHint().height()))
-        self.resize(0,0)
+        self.resize(0, 0)
 
     def _show_config_toogle(self):
         config = self._showconfig.isChecked()
@@ -291,5 +313,6 @@ def main():
     mwg.show()
     app.exec_()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
