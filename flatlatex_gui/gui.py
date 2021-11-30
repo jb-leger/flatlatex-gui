@@ -27,6 +27,8 @@ import configobj
 
 import flatlatex
 
+from PyQt5.QtCore import QSize
+
 from PyQt5.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -62,6 +64,11 @@ class ConfigAndConverter:
         else:
             self._newcommands = (r"% Insert \newcommand lines here.",)
 
+        if "display_escaped" in self._configobj:
+            self._display_escaped = (self._configobj['display_escaped'] == 'True')
+        else:
+            self._display_escaped = False
+
         self._create_converter()
 
     @property
@@ -75,6 +82,10 @@ class ConfigAndConverter:
     @property
     def newcommands(self):
         return self._newcommands
+
+    @property
+    def display_escaped(self):
+        return self._display_escaped
 
     def _create_converter(self):
         newconverter = flatlatex.converter(
@@ -106,14 +117,21 @@ class ConfigAndConverter:
         self.converter.allow_zw = allow_zw
         self.converter.allow_combinings = allow_combinings
 
+    def update_display_escaped(self, display_escaped):
+        self._display_escaped = display_escaped
+        self._configobj['display_escaped'] = display_escaped
+        self._configobj.write()
+
 
 class WidConfig(QWidget):
-    def __init__(self, cc, reconvert, parent=None):
+    def __init__(self, cc, reconvert, displayescaped_display, parent=None):
         super().__init__(parent)
 
         self._cc = cc
         self._reconvert = reconvert
+        self._displayescaped_display = displayescaped_display
 
+        self._displayescaped = QCheckBox("Display escaped unicode")
         self._allowcombinings = QCheckBox("Allow combining chars")
         self._allowzw = QCheckBox("Allow zero width chars")
         self._newcommands = QTextEdit()
@@ -127,6 +145,7 @@ class WidConfig(QWidget):
         btnlayout.addWidget(self._btn_update)
         btnlayout.addWidget(self._btn_cancel)
 
+        self._displayescaped.setChecked(self._cc.display_escaped)
         self._allowzw.setChecked(self._cc.allow_zw)
         self._allowcombinings.setChecked(self._cc.allow_combinings)
         self._newcommands.setText("\n".join(self._cc.newcommands))
@@ -134,17 +153,24 @@ class WidConfig(QWidget):
         self._label_errornewcommand.setVisible(False)
 
         layout = QVBoxLayout(self)
+        layout.addWidget(self._displayescaped)
         layout.addWidget(self._allowcombinings)
         layout.addWidget(self._allowzw)
         layout.addWidget(self._newcommands)
         layout.addWidget(self._widbtn)
         layout.addWidget(self._label_errornewcommand)
 
+        self._displayescaped.stateChanged.connect(self._displayescaped_update)
         self._allowcombinings.stateChanged.connect(self._params_update)
         self._allowzw.stateChanged.connect(self._params_update)
         self._newcommands.textChanged.connect(self._newcommands_changed)
         self._btn_update.clicked.connect(self._newcommands_update)
         self._btn_cancel.clicked.connect(self._newcommands_cancel)
+
+    def _displayescaped_update(self):
+        display_escaped = self._displayescaped.isChecked()
+        self._cc.update_display_escaped(display_escaped)
+        self._displayescaped_display()
 
     def _params_update(self):
         allow_zw = self._allowzw.isChecked()
@@ -174,26 +200,31 @@ class WidMain(QDialog):
         super().__init__(parent)
 
         self._cc = ConfigAndConverter()
-
-        mainLayout = QVBoxLayout(self)
-        mainLayout.setContentsMargins(5, 5, 5, 5)
+        
+        self.mainLayout = QVBoxLayout(self)
+        self.mainLayout.setContentsMargins(5, 5, 5, 5)
 
         self._showconfig = QCheckBox("Show configuration")
-        self._config = WidConfig(self._cc, self._reconvert)
+        self._config = WidConfig(self._cc, self._reconvert, self._displayescaped_display)
         self._showconfig.setChecked(False)
         self._config.setVisible(False)
         self._showconfig.stateChanged.connect(self._show_config_toogle)
 
-        labelLaTeX = QLabel("LaTeX: ")
-        labelunicode = QLabel("Unicode: ")
+        self._labelLaTeX = QLabel("LaTeX: ")
+        self._labelunicode = QLabel("Unicode: ")
+        self._labelunicodeescape = QLabel("Escaped: ")
         self._latexline = QLineEdit()
         self._unicodeline = QLineEdit()
+        self._unicodeescapeline = QLineEdit()
         layoutlinelatex = QHBoxLayout()
         layoutlineunicode = QHBoxLayout()
-        layoutlinelatex.addWidget(labelLaTeX)
+        layoutlineunicodeescape = QHBoxLayout()
+        layoutlinelatex.addWidget(self._labelLaTeX)
         layoutlinelatex.addWidget(self._latexline)
-        layoutlineunicode.addWidget(labelunicode)
+        layoutlineunicode.addWidget(self._labelunicode)
         layoutlineunicode.addWidget(self._unicodeline)
+        layoutlineunicodeescape.addWidget(self._labelunicodeescape)
+        layoutlineunicodeescape.addWidget(self._unicodeescapeline)
 
         self._latexline.textChanged.connect(self._reconvert)
         self._unicodeline.setReadOnly(True)
@@ -202,16 +233,23 @@ class WidMain(QDialog):
         self._okbtn.clicked.connect(self._clip_and_exit)
         self._okbtn.setAutoDefault(True)
 
-        mainLayout.addWidget(self._showconfig)
-        mainLayout.addWidget(self._config)
-        mainLayout.addLayout(layoutlinelatex)
-        mainLayout.addLayout(layoutlineunicode)
-        mainLayout.addWidget(self._okbtn)
+        self.mainLayout.addWidget(self._showconfig)
+        self.mainLayout.addWidget(self._config)
+        self.mainLayout.addLayout(layoutlinelatex)
+        self.mainLayout.addLayout(layoutlineunicode)
+        self.mainLayout.addLayout(layoutlineunicodeescape)
+        self.mainLayout.addWidget(self._okbtn)
         self.setWindowTitle("FlatLatex GUI")
+        self._displayescaped_display()
         self._set_initial_size()
 
         self._lastunicode = ""
         self._latexline.setFocus()
+
+    def _displayescaped_display(self):
+        displayescaped = self._cc.display_escaped
+        self._labelunicodeescape.setVisible(displayescaped)
+        self._unicodeescapeline.setVisible(displayescaped)
 
     def _reconvert(self):
         latex = self._latexline.text()
@@ -219,10 +257,13 @@ class WidMain(QDialog):
             output = self._cc.converter.convert(latex)
         except flatlatex.conv.LatexSyntaxError:
             self._unicodeline.setStyleSheet("background-color: rgb(255, 208, 208);")
+            self._unicodeescapeline.setStyleSheet("background-color: rgb(255, 208, 208);")
             return
         self._lastunicode = output
         self._unicodeline.setText(output)
+        self._unicodeescapeline.setText(output.encode('unicode_escape').decode())
         self._unicodeline.setStyleSheet("")
+        self._unicodeescapeline.setStyleSheet("")
 
     def _clipboard(self):
         if self._lastunicode:
@@ -233,14 +274,15 @@ class WidMain(QDialog):
         QApplication.quit()
 
     def _set_initial_size(self):
-        self.setMinimumWidth(600)
-        pass
+        width = 600
+        self.setMinimumWidth(width)
+        self.setFixedSize(QSize(width, self.mainLayout.sizeHint().height()))
+        self.resize(0,0)
 
     def _show_config_toogle(self):
         config = self._showconfig.isChecked()
         self._config.setVisible(config)
-        if not config:
-            self._set_initial_size()
+        self._set_initial_size()
 
 
 def main():
@@ -249,3 +291,5 @@ def main():
     mwg.show()
     app.exec_()
 
+if __name__ == '__main__':
+    main()

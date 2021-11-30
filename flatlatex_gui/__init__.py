@@ -27,16 +27,17 @@ using unicode characters.
 
 For example, this :
 
-    \forall \varepsilon>0,\,\exists x\in\mathbb R,\, x^{12}=\varepsilon
+    \\forall \\eta>0\\, \\exists n\\in\\mathbb{N}\\, \\forall i>n\\, u_i-\\mathcal{l}<\\eta
 
 gives:
 
-    ∀ε>0, ∃x∈ℝ, x¹²=ε
+    ∀η>0 ∃n∈ℕ ∀i>n uᵢ-𝓵<η
+
 """
 
 __title__ = "flatlatex-gui"
 __author__ = "Jean-Benoist Leger"
 __licence__ = "MIT"
 
-version_info = (0, 1)
+version_info = (0, 2)
 __version__ = ".".join(map(str, version_info))
