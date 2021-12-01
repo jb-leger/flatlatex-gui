@@ -39,5 +39,5 @@ __title__ = "flatlatex-gui"
 __author__ = "Jean-Benoist Leger"
 __licence__ = "MIT"
 
-version_info = (0, 3)
+version_info = (0, 4)
 __version__ = ".".join(map(str, version_info))
