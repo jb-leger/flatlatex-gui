@@ -22,7 +22,6 @@ import re
 import os
 import sys
 
-import xdg
 import configobj
 
 import flatlatex
@@ -42,13 +41,17 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+def _get_configdir():
+    _home = os.path.expanduser('~')
+    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or os.path.join(_home, '.config')
+    return os.path.join(xdg_config_home, 'flatlatex-gui')
 
 class ConfigAndConverter:
     def __init__(self):
-        basedir = xdg.BaseDirectory.xdg_config_home + os.sep + "flatlatex-gui"
+        basedir = _get_configdir()
         if not os.path.isdir(basedir):
             os.mkdir(basedir)
-        configfile = basedir + os.sep + "config.ini"
+        configfile = os.path.join(basedir,"config.ini")
         self._configobj = configobj.ConfigObj(configfile)
 
         if "allow_zw" in self._configobj:

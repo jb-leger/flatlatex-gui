@@ -1,4 +1,3 @@
 flatlatex>=0.14
 configobj
 PyQt5
-xdg
