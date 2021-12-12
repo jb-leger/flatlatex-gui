@@ -48,9 +48,6 @@ setup(
     author='Jean-Benoist Leger',
     author_email='jb@leger.tf',
 
-    # Choose your license
-    license='MIT',
-
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         # How mature is this project? Common values are
