@@ -42,7 +42,7 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/jb-leger/flatlatex_gui',
+    url='https://github.com/jb-leger/flatlatex-gui',
 
     # Author details
     author='Jean-Benoist Leger',
